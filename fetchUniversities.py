@@ -327,26 +327,154 @@ for url in allURLs:
 
             uniType = cells[2].text
 
-            # print("uni= " + uni)
-            # print("state= " + state)
-            # print("city= " + city)
-            # print("department= " + department)
-            # print("duration= " + str(duration))
-            # print("language= " + language)
-            # print("minScore= " + str(minScore))
-            # print("placement= " + str(placement))
-            # print("quota= " + str(quota))
-            # print("uniType= " + uniType)
-            # print("scholarship= " + scholarship)
-            # print("\n\n")
-
-            # f.write('University(universityID: UUID().uuidString, dictionary: ["name": "{0}", "state": "{1}", "city": "{2}", "department": "{3}", "duration": {4}, "language": "{5}", "minScore": {6}, "placement": {7}, "quota": {8}, "type": "{9}", "scholarship": "{10}" ]), \n\n '
-            #         .format(uni.strip(), state.strip(), city.strip(), department.strip(), duration, language.strip(), minScore, placement, quota, uniType.strip(), scholarship.strip()))
-
             f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10} # \n'
-                    .format(uni.strip(), state.strip(), city.strip(), department.strip(), duration, language.strip(), minScore, placement, quota, uniType.strip(), scholarship.strip()))
+                    .format(uni.strip(), state.strip(), city.strip(), department.strip(), duration, language.strip(), round(minScore, 4), placement, quota, uniType.strip(), scholarship.strip()))
 
             index = index + 1
+
+
+mainUrl2 = 'https://www.basarisiralamalari.com/2-yillik-universite-onlisans-bolumleri/'
+# Opens up the connection and gets the html page from it
+uClient2 = uReq(mainUrl2)
+pageHtml2 = uClient2.read()
+
+# Closes the connection
+uClient2.close()
+
+pageSoup2 = soup(pageHtml2.decode('utf-8', 'ignore'), 'html.parser')
+
+uniDiv2 = pageSoup2.find('div', {'id': 'singleContent'})
+uniList2 = uniDiv2.find('ul')
+allRows2 = uniList2.findAll('li')
+
+allURLs2 = []
+
+for row2 in allRows2:
+    href2 = row2.find('a')
+    if href2 is None:
+        continue
+    allURLs2.append(str(href2.get('href')))
+
+index2 = 1
+
+for url2 in allURLs2:
+    # if str(url) == "https://www.basarisiralamalari.com/alman-dili-ve-edebiyati-2022-taban-puanlari-ve-basari-siralamalari/":
+
+    # Opens up the connection and gets the html page from it
+    uClient2 = uReq(url2)
+    pageHtml2 = uClient2.read()
+
+    # Closes the connection
+    uClient2.close()
+
+    pageSoup2 = soup(pageHtml2.decode('utf-8', 'ignore'), 'html.parser')
+
+    uniTableList2 = pageSoup2.findAll('table', {'id': 'basaritable'})
+    if uniTableList2 is None:
+        uniTableList2 = pageSoup2.findAll('table', {'id': 'universitego'})
+    # tableHeader = uniTable.tbody.tr
+    for uniTable2 in uniTableList2:
+        wholeTbody2 = uniTable2.tbody
+        allRows2 = wholeTbody2.findAll('tr')
+
+        for row2 in allRows2:
+            cells2 = row2.findAll('td')
+            if cells2[0].text == 'Üniversite Adı':
+                continue
+            # Gets the University Name from the first column
+            uni2 = cells2[0].text.split('(')[0]
+            # Gets city and isState values from the first column as well
+            city_isState2 = re.findall(r'\((.*?) *\)', cells2[0].text)
+
+            state2 = ""
+            if len(city_isState2) > 0:
+                state2 = city_isState2[0]
+            city2 = str(uniNameToCityName(uni2))
+            cityUniList2 = cells2[0].text.split(')')
+            if len(cityUniList2) > 1:
+                if len(cityUniList2[1]) != 0:
+                    city2 = cityUniList2[1]
+            if len(city_isState2) > 1:
+                if len(city_isState2[1]) != 0:
+                    city2 = str(city_isState2[1])
+
+            departmentList2 = re.findall(r'\((.*?) *\)', cells2[1].text)
+            department2 = cells2[1].text.split("(")[0]
+
+            if len(departmentList2) > 0:
+                if departmentList2[0].find("KKTC") > -1:
+                    department2 = department2 + "(KKTC)"
+                if departmentList2[0].find("İ.Ö") > -1:
+                    department2 = department2 + "(İ.Ö)"
+                if departmentList2[0].find("U.Ö") > -1:
+                    department2 = department2 + "(U.Ö)"
+                if departmentList2[0].find("MTOK") > -1:
+                    department2 = department2 + "(MTOK)"
+
+            duration2 = 2
+
+            language2 = "Türkçe"
+            if len(departmentList2) > 0:
+                if departmentList2[0].find("Alm") > -1:
+                    language2 = "Almanca"
+                elif departmentList2[0].find("İng") > -1:
+                    language2 = "İngilizce"
+                elif departmentList2[0].find("Fra") > -1:
+                    language2 = "Fransızca"
+                else:
+                    language2 = "Türkçe"
+
+            scholarship2 = ""
+            if len(departmentList2) > 0:
+                if departmentList2[0].find("%100") > -1:
+                    scholarship2 = "%100 Burslu"
+                elif departmentList2[0].find("%75") > -1:
+                    scholarship2 = "%75 Burslu"
+                elif departmentList2[0].find("%50") > -1:
+                    scholarship2 = "%50 Burslu"
+                elif departmentList2[0].find("%25") > -1:
+                    scholarship2 = "%25 Burslu"
+                elif departmentList2[0].find("Burslu") > -1:
+                    scholarship2 = "%100 Burslu"
+                elif departmentList2[0].find("Ücretli") > -1:
+                    scholarship2 = "%0 Burslu"
+                elif departmentList2[0].find("Burssuz") > -1:
+                    scholarship2 = "%0 Burslu"
+
+            minScore2 = 0
+            minScoreString2 = (cells2[4].text).replace(",", ".")
+            try:
+                float(minScoreString2)
+                minScore2 = Decimal(minScoreString2)
+            except ValueError:
+                print("minScore Not a float")
+
+            placement2 = 0
+            placementString2 = ""
+            if len(cells2) > 5:
+                if (cells2[5].text).find(",") > -1:
+                    placementString2 = (cells2[5].text).replace(",", "")
+                if (cells2[5].text).find(".") > -1:
+                    placementString2 = (cells2[5].text).replace(".", "")
+                try:
+                    int(placementString2)
+                    placement2 = int(placementString2)
+                except ValueError:
+                    print("Placement Not an int")
+
+            quota2 = 0
+            try:
+                int(cells2[3].text)
+                quota2 = int(cells2[3].text)
+            except ValueError:
+                print("Quota Not an int")
+
+            uniType2 = cells2[2].text
+
+            f.write('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10} # \n'
+                    .format(uni2.strip(), state2.strip(), city2.strip(), department2.strip(), duration2, language2.strip(), round(minScore2, 4), placement2, quota2, uniType2.strip(), scholarship2.strip()))
+
+            index2 = index2 + 1
 
 f.close()
 print('success')
